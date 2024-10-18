@@ -1,21 +1,30 @@
 import express from "express";
 import "dotenv/config";
 import cors from "cors";
-import { connect } from "react-redux";
 import connectDB from "./config/mongodb.js";
 
-// APP config
-const port = process.env.PORT || 4000;
-const app = express();
+async function startServer() {
+   // APP config
+   const port = process.env.PORT || 4000;
+   const app = express();
 
-// Initialize Middleware
-app.use(express.json());
-app.use(cors());
-await connectDB();
+   // Initialize Middleware
+   app.use(express.json());
+   app.use(cors());
 
-// API routes
-app.get("/", (req, res) => {
-   res.send("API Working");
+   // Connect to the database
+   await connectDB();
+
+   // API routes
+   app.get("/", (req, res) => {
+      res.send("API Working");
+   });
+
+   // Start the server
+   app.listen(port, () => console.log("Server running on port " + port));
+}
+
+// Call the async function to start the server
+startServer().catch((err) => {
+   console.error("Error starting the server:", err);
 });
-
-app.listen(port, () => console.log("server running on " + port));
