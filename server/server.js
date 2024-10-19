@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import connectDB from "./config/mongodb.js";
 import userRouter from "./routes/userRoutes.js";
+import imageRouter from "./routes/imageRoutes.js";
 
 async function startServer() {
    // APP config
@@ -21,6 +22,7 @@ async function startServer() {
       res.send("API Working");
    });
    app.use("/api/user", userRouter);
+   app.use("/api/image", imageRouter);
 
    // Start the server
    app.listen(port, () => console.log("Server running on port " + port));
