@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { assets, plans } from "../assets/assets";
 
 const BuyCredit = () => {

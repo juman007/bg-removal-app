@@ -1,5 +1,9 @@
 import { Webhook } from "svix";
 import userModel from "../models/userModel.js";
+import transactionModel from "../models/transactionModel.js";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // API Controller function to manage clerk User with database
 // https://localhost:4000/api/user/webhooks
@@ -85,4 +89,82 @@ const userCredit = async (req, res) => {
    }
 };
 
-export { clerkWebHooks, userCredit };
+//API to make payment credits (Stripe)
+const paymentStripe = async (req, res) => {
+   try {
+      const { clerkId, planId } = req.body;
+
+      const userData = await userModel.findOne({ clerkId });
+
+      if (!userData || !planId) {
+         return res.json({
+            success: false,
+            message: "Invalid Credentials",
+         });
+      }
+
+      let credits, plan, amount;
+
+      // Determine the plan details based on planId
+      switch (planId) {
+         case "Basic":
+            plan = "Basic";
+            credits = 100;
+            amount = 10; // in dollars
+            break;
+
+         case "Advanced":
+            plan = "Advanced";
+            credits = 500;
+            amount = 50; // in dollars
+            break;
+
+         case "Business":
+            plan = "Business";
+            credits = 5000;
+            amount = 250; // in dollars
+            break;
+
+         default:
+            return res.json({
+               success: false,
+               message: "Invalid Plan ID",
+            });
+      }
+
+      const date = Date.now();
+
+      // Creating transaction record
+      const transactionData = {
+         clerkId,
+         plan,
+         credits,
+         amount,
+         date,
+      };
+
+      const newTransaction = await transactionModel.create(transactionData);
+
+      // Create Stripe payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+         amount: amount * 100, // Convert to cents
+         currency: "usd",
+         receipt_email: userData.email, // Optional: Store user email for receipt
+         metadata: { transactionId: newTransaction._id.toString() }, // Link to transaction
+      });
+
+      // Return the client secret to the frontend
+      res.json({
+         success: true,
+         clientSecret: paymentIntent.client_secret,
+         transactionId: newTransaction._id,
+      });
+   } catch (error) {
+      console.log(error.message);
+      res.json({
+         success: false,
+         message: error.message,
+      });
+   }
+};
+export { clerkWebHooks, userCredit, paymentStripe };
